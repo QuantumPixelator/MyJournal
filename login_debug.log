@@ -1,0 +1,20 @@
+INFO:root:2025-12-22T22:14:27.389000 - Login attempt
+INFO:root:Decryption: OK
+INFO:root:TOTP verify: True
+ERROR:root:Login exception
+Traceback (most recent call last):
+  File "C:\Users\dbowlin\Code\MyJournal\main.py", line 79, in <module>
+    win = MainWindow(db)
+  File "C:\Users\dbowlin\Code\MyJournal\main_window.py", line 152, in __init__
+    self._load_calendar_dates()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\dbowlin\Code\MyJournal\main_window.py", line 951, in _load_calendar_dates
+    self.calendar.setDateTextFormat(qd, fmt)
+    ^^^^^^^^^^^^^
+AttributeError: 'MainWindow' object has no attribute 'calendar'
+INFO:root:2025-12-22T22:20:41.542563 - Login attempt
+INFO:root:Decryption: OK
+INFO:root:TOTP verify: True
+INFO:root:2025-12-22T22:21:41.801711 - Login attempt
+INFO:root:Decryption: OK
+INFO:root:TOTP verify: True

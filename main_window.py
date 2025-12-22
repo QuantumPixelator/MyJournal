@@ -2,7 +2,7 @@
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QSplitter, QCalendarWidget, QListWidget, QListWidgetItem, QTextEdit,
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QFileDialog,
-    QMessageBox, QMenu, QToolBar, QFontComboBox, QSpinBox, QToolButton, QDialog
+    QMessageBox, QMenu, QToolBar, QFontComboBox, QSpinBox, QToolButton
 )
 from PySide6.QtCore import Qt, QDate, QSettings, QUrl, QTimer
 from PySide6.QtGui import QTextCharFormat, QDesktopServices, QAction, QTextDocument, QColor, QFont, QKeySequence, QTextListFormat, QTextCursor, QTextImageFormat
@@ -10,14 +10,8 @@ from PySide6.QtGui import QShortcut
 from PySide6.QtGui import QPixmap, QPainter, QIcon
 from entry import Entry
 from settings_dialog import SettingsDialog
-from auth import AdminAuthDialog, SetupDialog
-from database import DB_FILE
-from encryption import EncryptionManager
 import base64
 import os
-import sys
-import sqlite3
-import pyotp
 from datetime import datetime
 from PySide6.QtCore import QUrl, QPoint
 from PySide6.QtGui import QImage
@@ -163,9 +157,6 @@ class MainWindow(QMainWindow):
         file_menu.addSeparator()
         file_menu.addAction("Export Entry to HTML", self.export_entry)
         file_menu.addAction("Backup Database", self.backup_db)
-        # Admin menu (requires re-auth)
-        self.admin_menu = menu.addMenu("Admin")
-        self.admin_menu.setEnabled(True)
         menu.addAction("Theme Settings", self.open_settings)
 
         toolbar = QToolBar()
@@ -214,8 +205,6 @@ class MainWindow(QMainWindow):
                 return QIcon(path_svg)
             return self._make_icon(letter)
 
-        admin_purge = self.admin_menu.addAction("Purge Database...", self._admin_purge)
-        admin_reset = self.admin_menu.addAction("Reset Master Pass/TOTP...", self._admin_reset)
         self.bold_btn = QToolButton()
         self.bold_btn.setIcon(_get_icon("bold", "B"))
         self.bold_btn.setCheckable(True)
@@ -260,107 +249,6 @@ class MainWindow(QMainWindow):
         # Keyboard shortcuts for formatting
         QShortcut(QKeySequence("Ctrl+B"), self, activated=self._toggle_bold)
         QShortcut(QKeySequence("Ctrl+I"), self, activated=self._toggle_italic)
-
-    def _admin_verify(self, password: str, code: str) -> bool:
-        """Verify provided master password and TOTP code against DB config.
-
-        Returns True if verification succeeds, False otherwise.
-        """
-        try:
-            # read raw config values from DB without relying on self.db.enc
-            cur = self.db.conn.cursor()
-            cur.execute("SELECT salt, totp_secret FROM config WHERE id = 1")
-            row = cur.fetchone()
-            if not row:
-                return False
-            salt, enc_totp = row
-            if not salt or not enc_totp:
-                return False
-            # derive key from provided password and attempt to decrypt stored totp
-            try:
-                mgr = EncryptionManager(password, salt)
-                totp_secret = mgr.decrypt_text(enc_totp)
-            except Exception:
-                return False
-            # verify TOTP
-            try:
-                totp = pyotp.TOTP(totp_secret)
-                return totp.verify(code, valid_window=1)
-            except Exception:
-                return False
-        except Exception:
-            return False
-
-    def _admin_purge(self):
-        dlg = AdminAuthDialog(self)
-        if dlg.exec() != QDialog.Accepted:
-            return
-        pw = dlg.pw.text()
-        code = dlg.totp.text()
-        if not self._admin_verify(pw, code):
-            QMessageBox.warning(self, "Admin", "Authentication failed. Action cancelled.")
-            return
-        resp = QMessageBox.question(self, "Purge Database",
-                                    "This will permanently delete the journal database and cannot be undone. Continue?",
-                                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
-        if resp != QMessageBox.StandardButton.Yes:
-            return
-        try:
-            # close DB and remove file
-            try:
-                self.db.close()
-            except Exception:
-                pass
-            if os.path.exists(DB_FILE):
-                os.remove(DB_FILE)
-            QMessageBox.information(self, "Purge Database", "Database file removed. The application will now exit.")
-            QApplication.quit()
-        except Exception as e:
-            QMessageBox.critical(self, "Purge Failed", f"Failed to purge database: {e}")
-
-    def _admin_reset(self):
-        dlg = AdminAuthDialog(self)
-        if dlg.exec() != QDialog.Accepted:
-            return
-        pw = dlg.pw.text()
-        code = dlg.totp.text()
-        if not self._admin_verify(pw, code):
-            QMessageBox.warning(self, "Admin", "Authentication failed. Action cancelled.")
-            return
-        # confirm reset
-        resp = QMessageBox.question(self, "Reset Master Password",
-                                    "This will change the master password and TOTP secret. Entries will be re-encrypted with the new password. Continue?",
-                                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
-        if resp != QMessageBox.StandardButton.Yes:
-            return
-        # ask for new password via SetupDialog
-        sd = SetupDialog()
-        if sd.exec() != QDialog.Accepted:
-            return
-        new_password = sd.password
-        new_totp = sd.secret
-        # perform re-encryption: create new salt and manager
-        try:
-            new_salt = EncryptionManager.generate_salt()
-            new_mgr = EncryptionManager(new_password, new_salt)
-            # replace db.enc temporarily and save all entries re-encrypted
-            old_mgr = self.db.enc
-            try:
-                # set DB manager to new manager so save_entry uses new encryption
-                self.db.enc = new_mgr
-                # save_config will use self.db.enc to encrypt the totp secret
-                self.db.save_config(new_salt, new_totp)
-                # re-save each entry to re-encrypt attachments/fields
-                for ent in self.entries:
-                    # update last_saved timestamp
-                    ent.last_saved = datetime.utcnow().isoformat()
-                    self.db.save_entry(ent)
-                QMessageBox.information(self, "Reset Complete", "Master password and TOTP have been reset.")
-            finally:
-                # restore db.enc to new manager so app continues using new key
-                self.db.enc = new_mgr
-        except Exception as e:
-            QMessageBox.critical(self, "Reset Failed", f"Failed to reset master password: {e}")
         QShortcut(QKeySequence("Ctrl+U"), self, activated=self._toggle_underline)
         QShortcut(QKeySequence("Ctrl+Shift+S"), self, activated=self._toggle_strike)
         QShortcut(QKeySequence("Ctrl+Z"), self, activated=self._undo_apply)
