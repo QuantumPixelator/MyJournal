@@ -27,3 +27,8 @@ class Entry:
         self.content = content  # HTML string
         self.tags = tags or []  # list of str
         self.attachments = attachments or []  # list of dict {'filename': str, 'data': bytes}
+        # per-entry display metadata
+        self.font_family: str | None = None
+        self.font_size: int | None = None
+        # last saved timestamp (ISO string)
+        self.last_saved: str | None = None

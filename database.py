@@ -60,7 +60,10 @@ class DatabaseManager:
             date TEXT NOT NULL,
             encrypted_title BLOB,
             encrypted_content BLOB,
-            encrypted_tags BLOB
+            encrypted_tags BLOB,
+            encrypted_font_family BLOB,
+            encrypted_font_size BLOB,
+            encrypted_last_saved BLOB
         )""")
         self.cur.execute("""CREATE TABLE IF NOT EXISTS attachments (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -113,15 +116,49 @@ class DatabaseManager:
     def get_all_entries(self):
         self._ensure_connected()
         assert self.conn is not None and self.cur is not None and self.enc is not None
-        self.cur.execute("SELECT id, date, encrypted_title, encrypted_content, encrypted_tags FROM entries ORDER BY date DESC")
+        # ensure new columns exist (safe migration)
+        self.cur.execute("PRAGMA table_info(entries)")
+        cols = [r[1] for r in self.cur.fetchall()]
+        if 'encrypted_font_family' not in cols:
+            try:
+                self.cur.execute("ALTER TABLE entries ADD COLUMN encrypted_font_family BLOB")
+            except Exception:
+                pass
+        if 'encrypted_font_size' not in cols:
+            try:
+                self.cur.execute("ALTER TABLE entries ADD COLUMN encrypted_font_size BLOB")
+            except Exception:
+                pass
+        if 'encrypted_last_saved' not in cols:
+            try:
+                self.cur.execute("ALTER TABLE entries ADD COLUMN encrypted_last_saved BLOB")
+            except Exception:
+                pass
+        self.conn.commit()
+        self.cur.execute("SELECT id, date, encrypted_title, encrypted_content, encrypted_tags, encrypted_font_family, encrypted_font_size, encrypted_last_saved FROM entries ORDER BY date DESC")
         entries = []
         for row in self.cur.fetchall():
-            eid, edate, etitle, econtent, etags = row
+            eid, edate, etitle, econtent, etags, efontfam, efontsize, elast = row
             title = self.enc.decrypt_text(etitle) if etitle else ""
             content = self.enc.decrypt_text(econtent) if econtent else ""
             tags_json = self.enc.decrypt_text(etags) if etags else "[]"
             tags = json.loads(tags_json)
             entry = Entry(eid, edate, title, content, tags)
+            # per-entry font metadata
+            try:
+                entry.font_family = self.enc.decrypt_text(efontfam) if efontfam else None
+            except Exception:
+                entry.font_family = None
+            try:
+                fs = self.enc.decrypt_text(efontsize) if efontsize else None
+                entry.font_size = int(fs) if fs else None
+            except Exception:
+                entry.font_size = None
+            # last saved
+            try:
+                entry.last_saved = self.enc.decrypt_text(elast) if elast else None
+            except Exception:
+                entry.last_saved = None
             # load attachments
             self.cur.execute("SELECT filename, encrypted_data FROM attachments WHERE entry_id = ?", (eid,))
             for fname, edata in self.cur.fetchall():
@@ -142,13 +179,16 @@ class DatabaseManager:
         enc_title = self.enc.encrypt_text(entry.title) if entry.title else None
         enc_content = self.enc.encrypt_text(entry.content) if entry.content else None
         enc_tags = self.enc.encrypt_text(json.dumps(entry.tags))
+        enc_font_family = self.enc.encrypt_text(entry.font_family) if getattr(entry, 'font_family', None) else None
+        enc_font_size = self.enc.encrypt_text(str(entry.font_size)) if getattr(entry, 'font_size', None) else None
+        enc_last_saved = self.enc.encrypt_text(entry.last_saved) if getattr(entry, 'last_saved', None) else None
         if entry.id is None:
-            self.cur.execute("""INSERT INTO entries (date, encrypted_title, encrypted_content, encrypted_tags)
-                                VALUES (?, ?, ?, ?)""", (entry.date, enc_title, enc_content, enc_tags))
+            self.cur.execute("""INSERT INTO entries (date, encrypted_title, encrypted_content, encrypted_tags, encrypted_font_family, encrypted_font_size, encrypted_last_saved)
+                                VALUES (?, ?, ?, ?, ?, ?, ?)""", (entry.date, enc_title, enc_content, enc_tags, enc_font_family, enc_font_size, enc_last_saved))
             entry.id = self.cur.lastrowid
         else:
-            self.cur.execute("""UPDATE entries SET date = ?, encrypted_title = ?, encrypted_content = ?, encrypted_tags = ?
-                                WHERE id = ?""", (entry.date, enc_title, enc_content, enc_tags, entry.id))
+            self.cur.execute("""UPDATE entries SET date = ?, encrypted_title = ?, encrypted_content = ?, encrypted_tags = ?, encrypted_font_family = ?, encrypted_font_size = ?, encrypted_last_saved = ?
+                                WHERE id = ?""", (entry.date, enc_title, enc_content, enc_tags, enc_font_family, enc_font_size, enc_last_saved, entry.id))
             self.cur.execute("DELETE FROM attachments WHERE entry_id = ?", (entry.id,))
         for att in entry.attachments:
             enc_data = self.enc.encrypt_data(att["data"])

@@ -1,34 +1,33 @@
 MyJournal
 =========
 
-MyJournal is a simple personal journaling app. Use it to write daily entries, attach files or images, and keep your notes private with a master password and two-factor authentication.
+A small, encrypted personal journaling app with a rich-text editor.
 
-Quick start:
-
-- Activate the project's virtual environment:
-
-For Windows, activate the virtual environment and run:
+Run
+---
+- Activate the project's venv and run the app (Windows):
 
 ```powershell
 & .\.venv\Scripts\Activate.ps1
-python main.py
+.venv\Scripts\python.exe main.py
 ```
 
-For Linux (bash/zsh), activate the virtual environment and run:
+Features
+--------
+- Encrypted SQLite storage (per-field encryption)
+- Rich-text editor (bold, italic, underline, strike, color, inline images)
+- Per-entry or app-default font and size (persisted via settings)
+- Autosave, Save / Discard flows, and right-click delete with confirmation
+- List formatting (bulleted / numbered) and selection font-size increase/decrease
 
-```bash
-source .venv/bin/activate
-python main.py
-```
-
-- On first run you'll be asked to create a master password and scan a QR code with an authenticator app.
-- After setup, log in with your password and the 6-digit code from the authenticator app.
+Quick tests performed
+---------------------
+- DB round-trip: save and reload entries including font metadata and last-saved timestamp
+- Settings: `QSettings` persistence for default font and size
 
 Notes
-----------
-The database is encrypted. If you lose your password or the authenticator, your data cannot be retrieved.
+-----
+- The database is encrypted; losing the master password or authenticator makes data unrecoverable.
+- If you need automated GUI tests, we can add a small headless test harness.
 
-Screenshot
-----------
-
-![App screenshot](screenshot.png)
+If everything looks good I can keep polishing or add automated tests and a small diagnostics command.

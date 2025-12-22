@@ -83,3 +83,24 @@ class LoginDialog(QDialog):
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
+
+
+class AdminAuthDialog(QDialog):
+    """Dialog to confirm admin access: ask for master password and TOTP code."""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Admin Authentication")
+        layout = QVBoxLayout(self)
+        self.pw = QLineEdit()
+        self.pw.setEchoMode(QLineEdit.EchoMode.Password)
+        layout.addWidget(QLabel("Master password:"))
+        layout.addWidget(self.pw)
+        self.totp = QLineEdit()
+        self.totp.setPlaceholderText("6-digit code")
+        layout.addWidget(QLabel("Authenticator code:"))
+        layout.addWidget(self.totp)
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        layout.addWidget(buttons)
