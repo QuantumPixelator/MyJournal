@@ -1,15 +1,26 @@
 MyJournal
+MyJournal
 =========
 
 A small, encrypted personal journaling app with a rich-text editor.
 
+![App screenshot](screenshot.png)
+
 Run
 ---
-- Activate the project's venv and run the app (Windows):
+- Windows (PowerShell):
 
 ```powershell
-& .\.venv\Scripts\Activate.ps1
-.venv\Scripts\python.exe main.py
+& .\\.venv\\Scripts\\Activate.ps1
+.venv\\Scripts\\python.exe main.py
+```
+
+- Linux / macOS (bash):
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python main.py
 ```
 
 Features
@@ -28,6 +39,3 @@ Quick tests performed
 Notes
 -----
 - The database is encrypted; losing the master password or authenticator makes data unrecoverable.
-- If you need automated GUI tests, we can add a small headless test harness.
-
-If everything looks good I can keep polishing or add automated tests and a small diagnostics command.
