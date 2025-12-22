@@ -1,0 +1,24 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+build/
+dist/
+.eggs/
+*.egg-info/
+.mypy_cache/
+.pytest_cache/
+# IDE configs
+.vscode/
+*.swp
+
+# Database
+myjourney.db
+
+# OS files
+.DS_Store
+Thumbs.db
