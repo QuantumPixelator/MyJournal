@@ -379,6 +379,14 @@ class MainWindow(QMainWindow):
             return
         if not self.current_entry:
             return
+        # don't autosave entries without a title
+        try:
+            title = self.title_edit.text().strip() if hasattr(self, 'title_edit') else ''
+            if not title:
+                return
+        except Exception:
+            # on any unexpected error reading the title, skip autosave to avoid data loss
+            return
         # perform silent save
         try:
             self.save_current_entry(show_message=False)

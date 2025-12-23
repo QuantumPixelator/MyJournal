@@ -15,7 +15,7 @@ from database import DatabaseManager, DB_FILE
 from auth import SetupDialog, LoginDialog
 from main_window import MainWindow
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 app = QApplication(sys.argv)
@@ -57,7 +57,7 @@ while attempts < 5:
     # setup simple logging for login attempts to help diagnose failures
     try:
         logging.basicConfig(filename='login_debug.log', level=logging.INFO)
-        logging.info(f"{datetime.utcnow().isoformat()} - Login attempt")
+        logging.info(f"{datetime.now(timezone.utc).isoformat()} - Login attempt")
     except Exception:
         pass
     try:
