@@ -22,3 +22,31 @@ myjourney.db
 # OS files
 .DS_Store
 Thumbs.db
+
+# .NET / WPF build artifacts
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vs/
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# NuGet packages
+*.nupkg
+*.snupkg
+packages/
+.nuget/
