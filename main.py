@@ -15,7 +15,6 @@ from encryption import EncryptionManager
 from database import DatabaseManager, DB_FILE
 from auth import SetupDialog, LoginDialog
 from main_window import MainWindow
-import logging
 from datetime import datetime, timezone
 
 
@@ -56,23 +55,14 @@ while attempts < 5:
         QMessageBox.critical(None, "Error", "Database corrupted.")
         sys.exit(1)
     salt, enc_secret = row
-    # setup simple logging for login attempts to help diagnose failures
-    try:
-        logging.basicConfig(filename='login_debug.log', level=logging.INFO)
-        logging.info(f"{datetime.now(timezone.utc).isoformat()} - Login attempt")
-    except Exception:
-        pass
     try:
         enc = EncryptionManager(password, salt)
         try:
             totp_secret = enc.decrypt_text(enc_secret)
-            logging.info("Decryption: OK")
         except Exception as de:
-            logging.exception("Decryption failed")
             raise
         totp = pyotp.TOTP(totp_secret)
         valid = totp.verify(code)
-        logging.info(f"TOTP verify: {valid}")
         if not valid:
             raise ValueError("Invalid TOTP")
         # Successful login: connect DB and show main window
@@ -93,10 +83,6 @@ while attempts < 5:
         sys.exit(app.exec())
     except Exception:
         attempts += 1
-        try:
-            logging.exception("Login exception")
-        except Exception:
-            pass
         QMessageBox.warning(None, "Login failed", f"Wrong password or code. Attempts left: {5-attempts}")
 
 QMessageBox.critical(None, "Too many attempts", "Application locked.")

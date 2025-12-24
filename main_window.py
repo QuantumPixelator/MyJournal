@@ -158,6 +158,7 @@ class MainWindow(QMainWindow):
         file_menu.addAction("Export Entry to HTML", self.export_entry)
         file_menu.addAction("Backup Database", self.backup_db)
         menu.addAction("Theme Settings", self.open_settings)
+        menu.addAction("About", self.show_about)
 
         toolbar = QToolBar()
         toolbar.addAction("New", self.new_entry)
@@ -288,7 +289,7 @@ class MainWindow(QMainWindow):
         self.editor.customContextMenuRequested.connect(self._editor_context_menu)
         # create entry when user starts typing in editor
         self.editor.textChanged.connect(self._on_editor_text_changed)
-        right_layout.addWidget(self.editor)
+        right_layout.addWidget(self.editor, stretch=3)
         btn_l = QHBoxLayout()
         self.insert_img_btn = QPushButton("Insert Image Inline")
         self.insert_img_btn.clicked.connect(self.insert_image)
@@ -300,7 +301,7 @@ class MainWindow(QMainWindow):
         self.attach_list = QListWidget()
         self.attach_list.itemDoubleClicked.connect(self.save_attachment_as)
         right_layout.addWidget(QLabel("Attachments (double-click to save):"))
-        right_layout.addWidget(self.attach_list)
+        right_layout.addWidget(self.attach_list, stretch=1)
         tag_l = QHBoxLayout()
         tag_l.addWidget(QLabel("Tags:"))
         self.tags_edit = QLineEdit(placeholderText="comma separated")
@@ -835,6 +836,21 @@ class MainWindow(QMainWindow):
                 self._autosave_timer.setInterval(max(5, interval) * 1000)
             except Exception:
                 pass
+    
+    def show_about(self):
+        """Show an About dialog for the application."""
+        QMessageBox.about(
+            self,
+            "About MyJourney",
+            "MyJourney - A Personal Journal Application\n\n"
+            "Version 1.0\n"
+            "Built with Python 3.6+, PySide6 and SQLite.\n\n"
+            "Features include encrypted entries, TOTP authentication, "
+            "rich text editing, attachments, inline images, and more.\n\n"
+            "GitHub: https://github.com/quantumpixelator/myjourney\n\n"
+            "MIT License\n\n"
+            "© 2025 Quantum Pixelator"
+        )
 
     def _load_calendar_dates(self):
         dates = self.db.get_dates_with_entries()
