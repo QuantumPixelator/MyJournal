@@ -48,6 +48,7 @@ class DatabaseManager:
         self.enc = None
 
     def init_db(self):
+        """Initialize the database schema if it doesn't exist."""
         self._ensure_connected()
         assert self.conn is not None and self.cur is not None and self.enc is not None
         self.cur.execute("""CREATE TABLE IF NOT EXISTS config (
@@ -75,6 +76,7 @@ class DatabaseManager:
         self.conn.commit()
 
     def is_new(self) -> bool:
+        """Check if the database is new (no config or entries)."""
         if not os.path.exists(DB_FILE):
             return True
         if self.conn is None or self.cur is None:
@@ -90,6 +92,7 @@ class DatabaseManager:
         return self.cur.fetchone() is None
 
     def save_config(self, salt: bytes, totp_secret: str):
+        """Save the salt and TOTP secret to the config table."""
         self._ensure_connected()
         assert self.conn is not None and self.cur is not None and self.enc is not None
         enc_secret = self.enc.encrypt_text(totp_secret)
@@ -98,6 +101,7 @@ class DatabaseManager:
         self.conn.commit()
 
     def load_salt(self) -> bytes | None:
+        """Load the salt from the config table."""
         self._ensure_connected()
         assert self.conn is not None and self.cur is not None and self.enc is not None
         self.cur.execute("SELECT salt FROM config WHERE id = 1")
@@ -105,6 +109,7 @@ class DatabaseManager:
         return row[0] if row else None
 
     def load_totp_secret(self) -> str | None:
+        """Load and decrypt the TOTP secret from the config table."""
         self._ensure_connected()
         assert self.conn is not None and self.cur is not None and self.enc is not None
         self.cur.execute("SELECT totp_secret FROM config WHERE id = 1")
@@ -113,7 +118,8 @@ class DatabaseManager:
             return self.enc.decrypt_text(row[0])
         return None
 
-    def get_all_entries(self):
+    def get_all_entries(self) -> list[Entry]:
+        """Retrieve and decrypt all journal entries from the database."""
         self._ensure_connected()
         assert self.conn is not None and self.cur is not None and self.enc is not None
         # ensure new columns exist (safe migration)
@@ -167,13 +173,15 @@ class DatabaseManager:
             entries.append(entry)
         return entries
 
-    def get_dates_with_entries(self):
+    def get_dates_with_entries(self) -> list[str]:
+        """Get a list of all dates that have journal entries."""
         self._ensure_connected()
         assert self.conn is not None and self.cur is not None and self.enc is not None
         self.cur.execute("SELECT DISTINCT date FROM entries ORDER BY date")
         return [row[0] for row in self.cur.fetchall()]
 
     def save_entry(self, entry: Entry):
+        """Save or update a journal entry and its attachments."""
         self._ensure_connected()
         assert self.conn is not None and self.cur is not None and self.enc is not None
         enc_title = self.enc.encrypt_text(entry.title) if entry.title else None
@@ -197,6 +205,7 @@ class DatabaseManager:
         self.conn.commit()
 
     def delete_entry(self, entry_id: int):
+        """Delete a journal entry and its attachments by ID."""
         self._ensure_connected()
         assert self.conn is not None and self.cur is not None and self.enc is not None
         self.cur.execute("DELETE FROM entries WHERE id = ?", (entry_id,))

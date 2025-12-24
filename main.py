@@ -6,6 +6,7 @@ authentication the main window is shown.
 """
 
 import sys
+import os
 import sqlite3
 from PySide6.QtWidgets import QApplication, QMessageBox
 from PySide6.QtCore import QSettings
@@ -15,13 +16,14 @@ from encryption import EncryptionManager
 from database import DatabaseManager, DB_FILE
 from auth import SetupDialog, LoginDialog
 from main_window import MainWindow
-import logging
 from datetime import datetime, timezone
 
 
 app = QApplication(sys.argv)
 app.setStyle("Fusion")
-app.setWindowIcon(QIcon("icon.ico"))
+icon_path = os.path.join(os.path.dirname(__file__), "assets", "icon.ico")
+if os.path.exists(icon_path):
+    app.setWindowIcon(QIcon(icon_path))
 
 db = DatabaseManager()
 
@@ -36,7 +38,7 @@ if db.is_new():
     db.connect(enc)
     db.init_db()
     db.save_config(salt, setup.secret)
-    QMessageBox.information(None, "Setup complete", "Account created. Now log in with your password and authenticator.")
+    QMessageBox.information(None, "Setup complete", "Account created. Log in with your password and authenticator.")
 
 # Login loop: allow a few attempts before exiting
 attempts = 0
@@ -56,25 +58,17 @@ while attempts < 5:
         QMessageBox.critical(None, "Error", "Database corrupted.")
         sys.exit(1)
     salt, enc_secret = row
-    # setup simple logging for login attempts to help diagnose failures
     try:
-        logging.basicConfig(filename='login_debug.log', level=logging.INFO)
-        logging.info(f"{datetime.now(timezone.utc).isoformat()} - Login attempt")
-    except Exception:
-        pass
-    try:
-        enc = EncryptionManager(password, salt)
+        enc = EncryptionManager(password, bytes(salt))
         try:
             totp_secret = enc.decrypt_text(enc_secret)
-            logging.info("Decryption: OK")
-        except Exception as de:
-            logging.exception("Decryption failed")
-            raise
+        except Exception:
+            raise ValueError("Invalid password")
+        
         totp = pyotp.TOTP(totp_secret)
-        valid = totp.verify(code)
-        logging.info(f"TOTP verify: {valid}")
-        if not valid:
-            raise ValueError("Invalid TOTP")
+        if not totp.verify(code):
+            raise ValueError("Invalid authenticator code")
+            
         # Successful login: connect DB and show main window
         db.connect(enc)
         db.init_db()  # ensure tables exist
@@ -91,13 +85,10 @@ while attempts < 5:
             QTextEdit, QLineEdit, QListWidget {{ background-color: {ed_bg}; color: {ed_fg}; }}
         """)
         sys.exit(app.exec())
-    except Exception:
+    except Exception as e:
         attempts += 1
-        try:
-            logging.exception("Login exception")
-        except Exception:
-            pass
-        QMessageBox.warning(None, "Login failed", f"Wrong password or code. Attempts left: {5-attempts}")
+        error_msg = str(e) if str(e) else "Unknown error"
+        QMessageBox.warning(None, "Login failed", f"Error: {error_msg}\n\nAttempts remaining: {5-attempts}\n\nIf you've forgotten your password, you may need to restore from a backup or reset the database (data will be lost).")
 
 QMessageBox.critical(None, "Too many attempts", "Application locked.")
 sys.exit(1)

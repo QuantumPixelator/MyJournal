@@ -58,7 +58,7 @@ class SetupDialog(QDialog):
     def validate(self):
         """Check that the two password fields match and are not empty."""
         if self.pw1.text() == self.pw2.text() and self.pw1.text():
-            self.password = self.pw1.text()
+            self.password: str = self.pw1.text()
             self.accept()
         else:
             QMessageBox.warning(self, "Error", "Passwords do not match or are empty.")
