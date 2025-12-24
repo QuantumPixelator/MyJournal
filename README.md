@@ -31,11 +31,6 @@ Features
 - Autosave, Save / Discard flows, and right-click delete with confirmation
 - List formatting (bulleted / numbered) and selection font-size increase/decrease
 
-Quick tests performed
----------------------
-- DB round-trip: save and reload entries including font metadata and last-saved timestamp
-- Settings: `QSettings` persistence for default font and size
-
 Notes
 -----
 - The database is encrypted; losing the master password or authenticator makes data unrecoverable.

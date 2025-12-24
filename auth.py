@@ -47,7 +47,7 @@ class SetupDialog(QDialog):
     def _generate_qr(self):
         """Create and display the QR code for the TOTP secret."""
         totp = pyotp.TOTP(self.secret)
-        uri = totp.provisioning_uri(name="MyJourney", issuer_name="MyJourney")
+        uri = totp.provisioning_uri(name="MyJourney", issuer_name="Python")
         qr = qrcode.make(uri)
         bio = BytesIO()
         qr.save(bio, "PNG")

@@ -9,6 +9,7 @@ import sys
 import sqlite3
 from PySide6.QtWidgets import QApplication, QMessageBox
 from PySide6.QtCore import QSettings
+from PySide6.QtGui import QIcon
 import pyotp
 from encryption import EncryptionManager
 from database import DatabaseManager, DB_FILE
@@ -20,6 +21,7 @@ from datetime import datetime, timezone
 
 app = QApplication(sys.argv)
 app.setStyle("Fusion")
+app.setWindowIcon(QIcon("icon.ico"))
 
 db = DatabaseManager()
 
