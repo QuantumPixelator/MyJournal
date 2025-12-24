@@ -6,9 +6,7 @@ provides simple helpers to encrypt/decrypt text and binary data.
 
 import os
 import base64
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.backends import default_backend
+import argon2
 from cryptography.fernet import Fernet, InvalidToken
 
 class EncryptionManager:
@@ -18,7 +16,6 @@ class EncryptionManager:
     instance exposes convenience methods for encrypting/decrypting
     both text and raw bytes.
     """
-    ITERATIONS = 200000
 
     def __init__(self, password: str, salt: bytes):
         """Derive a key from ``password`` and ``salt`` and prepare Fernet.
@@ -31,18 +28,20 @@ class EncryptionManager:
 
     @staticmethod
     def _derive_key(password: str, salt: bytes):
-        """Derive a 32-byte key from a password and salt (PBKDF2-HMAC-SHA256).
+        """Derive a 32-byte key from a password and salt using Argon2id.
 
         The result is urlsafe-base64 encoded to be compatible with Fernet.
         """
-        kdf = PBKDF2HMAC(
-            algorithm=hashes.SHA256(),
-            length=32,
+        raw_key = argon2.low_level.hash_secret_raw(
+            secret=password.encode(),
             salt=salt,
-            iterations=EncryptionManager.ITERATIONS,
-            backend=default_backend()
+            time_cost=3,
+            memory_cost=65536,  # 64 MiB
+            parallelism=4,
+            hash_len=32,
+            type=argon2.Type.ID
         )
-        return base64.urlsafe_b64encode(kdf.derive(password.encode()))
+        return base64.urlsafe_b64encode(raw_key)
 
     @staticmethod
     def generate_salt() -> bytes:

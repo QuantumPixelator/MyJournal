@@ -1,10 +1,9 @@
 MyJournal
-MyJournal
 =========
 
 A small, encrypted personal journaling app with a rich-text editor.
 
-![App screenshot](screenshot.png)
+![App screenshot](assets/screenshot.png)
 
 Run
 ---
@@ -25,19 +24,24 @@ python main.py
 
 Features
 --------
-- Encrypted SQLite storage (per-field encryption)
-- Rich-text editor (bold, italic, underline, strike, color, inline images)
-- Per-entry or app-default font and size (persisted via settings)
-- Autosave, Save / Discard flows, and right-click delete with confirmation
-- List formatting (bulleted / numbered) and selection font-size increase/decrease
+- **Security**: Argon2id password hashing, Fernet (AES-128) field-level encryption, and 2FA (TOTP) support.
+- **Rich-Text Editor**: Bold, italic, underline, strike, custom colors, and inline images.
+- **Advanced Formatting**: Insert tables, code blocks, and hyperlinks with dedicated UI controls.
+- **Export Options**: Export your entries to PDF, Markdown, or HTML formats.
+- **Statistics Dashboard**: Visualize your journaling habits with word counts, tag frequency, and activity history.
+- **Attachments**: Attach any file to your entries with thumbnail previews for images.
+- **Auto-Maintenance**: Automatic inactivity logout, encrypted database backups, and image memory management (auto-resizing).
+- **Customization**: Per-entry or app-default font settings and dark/light theme support.
+- **Keyboard Shortcuts**: Standard shortcuts for formatting (Ctrl+B/I/U), saving (Ctrl+S), and searching (Ctrl+F).
 
 Notes
 -----
 - The database is encrypted; losing the master password or authenticator makes data unrecoverable.
+- Inactivity timeout and autosave intervals can be configured in the Settings dialog.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see below for details.
 
 ---
 

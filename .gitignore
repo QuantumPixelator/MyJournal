@@ -22,3 +22,4 @@ myjourney.db
 # OS files
 .DS_Store
 Thumbs.db
+myjourney_backup.enc

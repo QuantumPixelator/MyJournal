@@ -16,7 +16,8 @@ class Entry:
     retrieved from or written to the database.
     """
 
-    def __init__(self, id=None, entry_date=None, title="", content="", tags=None, attachments=None):
+    def __init__(self, id: int | None = None, entry_date: str | None = None, title: str = "", content: str = "", tags: list[str] | None = None, attachments: list[dict] | None = None):
+        """Initialize a journal entry."""
         self.id = id
         if entry_date is not None:
             self.date = entry_date
@@ -27,6 +28,7 @@ class Entry:
         self.content = content  # HTML string
         self.tags = tags or []  # list of str
         self.attachments = attachments or []  # list of dict {'filename': str, 'data': bytes}
+        self._undo_stack: list[str] = []  # For rich text undo support
         # per-entry display metadata
         self.font_family: str | None = None
         self.font_size: int | None = None
